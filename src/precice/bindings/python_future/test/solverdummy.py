@@ -86,11 +86,15 @@ while interface.is_coupling_ongoing():
         print("DUMMY: Writing iteration checkpoint")
         interface.fulfilled_action(precice.action_write_iteration_checkpoint())
 
-    interface.write_block_scalar_data(write_data_id, data_indices, write_block_data)
-    interface.write_scalar_data(write_data_id, idx, write_data)
+    interface.write_block_scalar_data(write_data_id, data_indices, write_block_data) 
+    #interface.write_block_scalar_data(write_data_id, data_indices+2, write_block_data)  # --> assertion fails
+    #interface.write_scalar_data(write_data_id, idx, write_data)
+    interface.write_scalar_data(write_data_id, idx+1, write_data)  # --> assertion fails
     dt = interface.advance(dt)
     read_block_data = interface.read_block_scalar_data(read_data_id, data_indices)
+    #read_block_data = interface.read_block_scalar_data(read_data_id, data_indices+2)  # --> assertion fails
     read_data = interface.read_scalar_data(read_data_id, idx)
+    #read_data = interface.read_scalar_data(read_data_id, idx+1)  # --> assertion fails
     for i in range(n):
         assert(read_block_data[i] == write_block_data[i])
     assert(read_data[n+1] == write_data[n+1])
