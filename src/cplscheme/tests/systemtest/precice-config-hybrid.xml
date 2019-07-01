@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+
+<precice-configuration>
+  
+  <solver-interface dimensions="2">
+    
+    <!-- Data fields that are exchanged between the solvers -->
+    <data:scalar name="DataParallel"/>
+    <data:scalar name="DataSerial"/>
+
+    <!-- A common mesh that uses these data fields -->
+    <mesh name="NodesParallel">
+      <use-data name="DataParallel"/>
+      <use-data name="DataSerial"/>
+    </mesh>
+
+    <mesh name="NodesSerial">
+      <use-data name="DataParallel"/>
+      <use-data name="DataSerial"/>
+    </mesh>
+
+    <!-- Represents each solver using preCICE. In a coupled simulation, two participants have to be
+         defined. The name of the participant has to match the name given on construction of the
+         precice::SolverInterface object used by the participant. -->
+    
+    <participant name="Parallel">
+      <master:sockets />
+      <!-- master:mpi-single -->
+      <!-- Makes the named mesh available to the participant. Mesh is provided by the solver directly. -->
+      <use-mesh name="NodesParallel" provide="yes"/>
+      <use-mesh name="NodesSerial" from="Serial"/>
+      <!-- Define input/output of the solver.  -->
+      <write-data name="DataParallel" mesh="NodesParallel"/>
+      <read-data  name="DataSerial" mesh="NodesParallel"/>
+      <mapping:nearest-neighbor direction="write" from="NodesParallel" to="NodesSerial"    constraint="conservative" timing="initial"/>
+      <mapping:nearest-neighbor direction="read"  from="NodesSerial"   to="NodesParallel"  constraint="consistent" timing="initial"/>
+    </participant>
+    
+    <participant name="Serial">
+      <use-mesh name="NodesSerial"         provide="yes"/>
+      <write-data name="DataSerial"        mesh="NodesSerial"/>
+      <read-data  name="DataParallel"      mesh="NodesSerial"/>
+    </participant>
+
+    <!-- Communication method, use TCP sockets, Change network to "ib0" on SuperMUC -->
+    <m2n:sockets from="Parallel" to="Serial" network="lo" distribution-type="gather-scatter" />
+
+    <coupling-scheme:serial-implicit>
+      <participants first="Parallel" second="Serial"/>
+      <max-time value="1.0"/>
+      <timestep-length value="1.0" valid-digits="8"/>
+      <max-iterations value="40"/>
+      <exchange data="DataParallel"      mesh="NodesSerial"   from="Parallel" to="Serial" />
+      <exchange data="DataSerial"        mesh="NodesSerial"   from="Serial"   to="Parallel" initialize="true"/>
+      <relative-convergence-measure      data="DataParallel"  mesh="NodesSerial" limit="1e-5"/>
+      <relative-convergence-measure      data="DataSerial"    mesh="NodesSerial" limit="1e-5"/>
+      <extrapolation-order value="0"/>
+      <post-processing:IQN-ILS>
+        <!-- PostProc always done on the second participant -->
+        <data name="DataSerial" mesh="NodesSerial"/>
+        <initial-relaxation value="0.01"/>
+        <max-used-iterations value="50"/>
+        <timesteps-reused value="8"/>
+        <filter type="QR2" limit="1e-3"/>
+      </post-processing:IQN-ILS>
+    </coupling-scheme:serial-implicit>
+    
+  </solver-interface>
+</precice-configuration>
