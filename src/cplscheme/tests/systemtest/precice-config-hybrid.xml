@@ -1,7 +1,11 @@
 <?xml version="1.0"?>
 
 <precice-configuration>
-  
+
+  <log enabled="true">
+	  <sink type="stream" output="stdout" format="preCICE: %File%::%Line%:%ColorizedSeverity% %Message%" filter="%Severity% >= trace"  enabled="true" />
+  </log>  
+
   <solver-interface dimensions="2">
     
     <!-- Data fields that are exchanged between the solvers -->
