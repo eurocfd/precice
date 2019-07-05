@@ -28,6 +28,29 @@ class TestBindings(TestCase):
         fake_mesh_id = 0  # compare to test/SolverInterface.hpp, fake_mesh_id
         self.assertEqual(fake_mesh_id, solver_interface.get_mesh_id("testMesh"))
 
+    def test_set_get_mesh_vertex(self):
+        solver_interface = precice_future.Interface("test", 0, 1)
+        mesh_id  = solver_interface.get_mesh_id("testMesh")
+        n_vertices = 1
+        position = np.random.rand(n_vertices * solver_interface.get_dimensions())
+        fake_vertex_id = 0  # compare to test/SolverInterface.hpp, fake_vertex_ids[0]
+        vertex_id = solver_interface.set_mesh_vertex(mesh_id, position)
+        self.assertEqual(fake_vertex_id, vertex_id)
+        self.assertEqual(n_vertices, solver_interface.get_mesh_vertex_size())
+        self.assertEqual(position, solver_interface.get_mesh_vertices(mesh_id, np.array([vertex_id]))
+
+    def test_set_get_mesh_vertices(self):
+        solver_interface = precice_future.Interface("test", 0, 1)
+        mesh_id  = solver_interface.get_mesh_id("testMesh")
+
+        n_vertices = 3
+        positions = np.random.rand(n_vertices * solver_interface.get_dimensions())
+        fake_vertex_ids = np.array([0, 1, 2])  # compare to test/SolverInterface.hpp, fake_vertex_ids
+        vertex_ids = solver_interface.set_mesh_vertices(mesh_id, positions)
+        self.assertTrue(np.array_equal(fake_vertex_ids, vertex_ids))
+        self.assertEqual(n_vertices, solver_interface.get_mesh_vertex_size())
+        self.assertTrue(np.array_equal(positions, solver_interface.get_mesh_vertices(mesh_id, vertex_ids)))
+
     def test_read_write_block_scalar_data(self):
         solver_interface = precice_future.Interface("test", 0, 1)
         write_data = np.array([3, 7, 8], dtype=np.double)

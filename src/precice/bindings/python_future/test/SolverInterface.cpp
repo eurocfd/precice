@@ -1,8 +1,10 @@
 #include "precice/SolverInterface.hpp"
 
 std::vector<double> fake_read_write_buffer;
+std::vector<double> fake_mesh_buffer;
 int fake_dimensions;
 int fake_mesh_id;
+int fake_vertex_id;
 
 namespace precice {
 
@@ -17,8 +19,11 @@ SolverInterface:: SolverInterface
   int                solverProcessSize )
 {
   fake_read_write_buffer = std::vector<double>();
+  fake_mesh_buffer = std:vector<double>();
   fake_dimensions = 3;
   fake_mesh_id = 0;
+  static const int arr[] = {0, 1, 2, 3, 4};
+  fake_vertex_ids = std:vector<int>(arr, arr + sizeof(arr) / sizeof(arr[0]));
 }
 
 SolverInterface::~SolverInterface() = default;
@@ -126,14 +131,23 @@ int SolverInterface:: setMeshVertex
   int           meshID,
   const double* position )
 {
-  return -1;
+  for(int i = 0; i < getDimensions(); i++){
+      fake_mesh_buffer.push_back(position[i]);
+  }
+
+  if(meshID == fake_mesh_id){
+      return fake_vertex_ids[0];
+  }
+  else{
+      return -1;
+  }
 }
 
 int SolverInterface:: getMeshVertexSize
 (
   int meshID) const
 {
-  return -1;
+  return fake_mesh_buffer.size()/getDimensions();
 }
 
 void SolverInterface:: setMeshVertices
@@ -142,7 +156,16 @@ void SolverInterface:: setMeshVertices
   int           size,
   const double* positions,
   int*          ids )
-{}
+{
+  if(meshID == fake_mesh_id){  // check for correct mesh id, otherwise do not return anything!
+    for(int i = 0; i < size){
+      ids[i] = fake_mesh_id[i];
+    }
+    for(int i = 0; i < size * getDimensions(); i++){
+      fake_mesh_buffer.push_back(positions[i]);
+    }
+  }
+}
 
 void SolverInterface:: getMeshVertices
 (
@@ -150,7 +173,19 @@ void SolverInterface:: getMeshVertices
   int        size,
   const int* ids,
   double*    positions ) const
-{}
+{
+  int k;
+  if(meshID == fake_mesh_id){  // check for correct mesh id, otherwise do not return anything!
+    for(int i = 0; i < size){
+      if(ids[i] == fake_vertex_ids[i]) { // check for correct vertex id, otherwise do not return anything!
+        for(int j = 0; j < getDimensions()){
+          k = i * getDimensions() + j;
+          positions[k] = fake_mesh_buffer[k];
+        }
+      }
+    }
+  }
+}
 
 void SolverInterface:: getMeshVertexIDsFromPositions
 (
