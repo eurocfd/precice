@@ -4,7 +4,8 @@ std::vector<double> fake_read_write_buffer;
 std::vector<double> fake_mesh_buffer;
 int fake_dimensions;
 int fake_mesh_id;
-int fake_vertex_id;
+int fake_data_id;
+std::vector<int> fake_vertex_ids;
 
 namespace precice {
 
@@ -19,11 +20,12 @@ SolverInterface:: SolverInterface
   int                solverProcessSize )
 {
   fake_read_write_buffer = std::vector<double>();
-  fake_mesh_buffer = std:vector<double>();
+  fake_mesh_buffer = std::vector<double>();
   fake_dimensions = 3;
   fake_mesh_id = 0;
+  fake_data_id = 15;
   static const int arr[] = {0, 1, 2, 3, 4};
-  fake_vertex_ids = std:vector<int>(arr, arr + sizeof(arr) / sizeof(arr[0]));
+  fake_vertex_ids = std::vector<int>(arr, arr + sizeof(arr) / sizeof(arr[0]));
 }
 
 SolverInterface::~SolverInterface() = default;
@@ -113,7 +115,7 @@ int SolverInterface:: getDataID
 (
   const std::string& dataName, int meshID ) const
 {
-  return -1;
+  return fake_data_id;
 }
 
 bool SolverInterface::hasToEvaluateSurrogateModel() const
@@ -147,7 +149,10 @@ int SolverInterface:: getMeshVertexSize
 (
   int meshID) const
 {
-  return fake_mesh_buffer.size()/getDimensions();
+  if(meshID == fake_mesh_id)  // check for correct mesh id, otherwise do not return anything!
+    return fake_mesh_buffer.size()/getDimensions();
+  else
+    return -1;
 }
 
 void SolverInterface:: setMeshVertices
@@ -158,8 +163,8 @@ void SolverInterface:: setMeshVertices
   int*          ids )
 {
   if(meshID == fake_mesh_id){  // check for correct mesh id, otherwise do not return anything!
-    for(int i = 0; i < size){
-      ids[i] = fake_mesh_id[i];
+    for(int i = 0; i < size; i++){
+      ids[i] = fake_vertex_ids[i];
     }
     for(int i = 0; i < size * getDimensions(); i++){
       fake_mesh_buffer.push_back(positions[i]);
@@ -176,9 +181,9 @@ void SolverInterface:: getMeshVertices
 {
   int k;
   if(meshID == fake_mesh_id){  // check for correct mesh id, otherwise do not return anything!
-    for(int i = 0; i < size){
+    for(int i = 0; i < size; i++){
       if(ids[i] == fake_vertex_ids[i]) { // check for correct vertex id, otherwise do not return anything!
-        for(int j = 0; j < getDimensions()){
+        for(int j = 0; j < getDimensions(); j++){
           k = i * getDimensions() + j;
           positions[k] = fake_mesh_buffer[k];
         }
@@ -256,10 +261,12 @@ void SolverInterface:: writeBlockVectorData
   const int*    valueIndices,
   const double* values )
 {
-  fake_read_write_buffer.clear();
-  for(int i = 0; i < size * this->getDimensions(); i++){
-      fake_read_write_buffer.push_back(values[i]); 
+  if(dataID == fake_data_id){
+    fake_read_write_buffer.clear();
+    for(int i = 0; i < size * this->getDimensions(); i++){
+      fake_read_write_buffer.push_back(values[i]);
     }
+  }
 }
 
 void SolverInterface:: writeVectorData
@@ -268,10 +275,12 @@ void SolverInterface:: writeVectorData
   int           valueIndex,
   const double* value )
 {
-  fake_read_write_buffer.clear();
-  for(int i = 0; i < this->getDimensions(); i++){
-      fake_read_write_buffer.push_back(value[i]); 
+  if(dataID == fake_data_id){
+    fake_read_write_buffer.clear();
+    for(int i = 0; i < this->getDimensions(); i++){
+      fake_read_write_buffer.push_back(value[i]);
     }
+  }
 }
 
 void SolverInterface:: writeBlockScalarData
@@ -281,10 +290,12 @@ void SolverInterface:: writeBlockScalarData
   const int*    valueIndices,
   const double* values )
 {
-  fake_read_write_buffer.clear();
-  for(int i = 0; i < size; i++){
-      fake_read_write_buffer.push_back(values[i]); 
+  if(dataID == fake_data_id){
+    fake_read_write_buffer.clear();
+    for(int i = 0; i < size; i++){
+      fake_read_write_buffer.push_back(values[i]);
     }
+  }
 }
 
 void SolverInterface:: writeScalarData
@@ -293,8 +304,10 @@ void SolverInterface:: writeScalarData
   int    valueIndex,
   double value )
 {
+  if(dataID == fake_data_id){
     fake_read_write_buffer.clear();
-    fake_read_write_buffer.push_back(value); 
+    fake_read_write_buffer.push_back(value);
+  }
 }
 
 void SolverInterface:: readBlockVectorData
@@ -304,9 +317,11 @@ void SolverInterface:: readBlockVectorData
   const int* valueIndices,
   double*    values ) const
 {
-  for(int i = 0; i < size * this->getDimensions(); i++){
+  if(dataID == fake_data_id){
+    for(int i = 0; i < size * this->getDimensions(); i++){
       values[i] = fake_read_write_buffer[i];
     }
+  }
 }
 
 void SolverInterface:: readVectorData
@@ -315,9 +330,11 @@ void SolverInterface:: readVectorData
   int     valueIndex,
   double* value ) const
 {
-  for(int i = 0; i < this->getDimensions(); i++){
+  if(dataID == fake_data_id){
+    for(int i = 0; i < this->getDimensions(); i++){
       value[i] = fake_read_write_buffer[i];
     }
+  }
 }
 
 void SolverInterface:: readBlockScalarData
@@ -327,9 +344,11 @@ void SolverInterface:: readBlockScalarData
   const int* valueIndices,
   double*    values ) const
 {
-  for(int i = 0; i<size; i++){
+  if(dataID == fake_data_id){
+    for(int i = 0; i<size; i++){
       values[i] = fake_read_write_buffer[i];
     }
+  }
 }
 
 void SolverInterface:: readScalarData
@@ -338,7 +357,9 @@ void SolverInterface:: readScalarData
   int     valueIndex,
   double& value ) const
 {
-    value = fake_read_write_buffer[0]; 
+  if(dataID == fake_data_id){
+    value = fake_read_write_buffer[0];
+  }
 }
 
 namespace constants {
