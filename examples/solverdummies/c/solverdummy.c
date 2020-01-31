@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <mpi.h>
 
 int main(int argc, char **argv)
 {
@@ -22,6 +23,11 @@ int main(int argc, char **argv)
   const char *configFileName  = argv[1];
   const char *participantName = argv[2];
   const char *meshName        = argv[3];
+  
+  MPI_Init(&argc, &argv);
+  int rank, size;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
 
   printf("DUMMY: Running solver dummy with preCICE config file \"%s\", participant name \"%s\", and mesh name \"%s\".\n",
          configFileName, participantName, meshName);
